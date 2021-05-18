@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ccke/go-playground/study_01/homework_03/Service"
+	"github.com/ccke/go-playground/study_01/homework_03/service"
 )
 
 func main()  {
@@ -12,7 +12,7 @@ func main()  {
 	var res bool
 	fmt.Print("开始初始化数据，请输入公司名、员工名、授予编号、授予数量：")
 	fmt.Scan(&companyName, &employeeName, &code, &num)
-	service := &Service.Service{}
+	service := &service.Service{}
 	companyId, employeeId := service.InitData(companyName, employeeName, code, num)
 
 	// 2.操作
