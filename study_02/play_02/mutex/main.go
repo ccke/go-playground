@@ -17,6 +17,7 @@ func add() {
 	}
 	wg.Done()
 }
+
 func main() {
 	wg.Add(2)
 	go add()
