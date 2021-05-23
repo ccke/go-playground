@@ -6,6 +6,7 @@ import (
 	"github.com/ccke/go-playground/study_02/homework_01/models"
 	"net/url"
 	"reflect"
+	"sync"
 )
 
 /**
@@ -39,23 +40,36 @@ func (kms *KmsServer) Encrypt(data interface{}) error {
 		return errors.New("参数类型错误")
 	}
 
-	for i, item := range newData {
-		t := reflect.TypeOf(item)
-		v := reflect.ValueOf(&item).Elem()
-		for j := 0; j < t.NumField(); j++ {
-			field := t.Field(j)
-			tag := field.Tag.Get("kms")
-			switch tag {
-			case "type=urlEncode":
-				str := v.Field(j).String()
-				v.Field(j).SetString(url.QueryEscape(str))
-			case "type=base64":
-				str := v.Field(j).String()
-				v.Field(j).SetString(base64.StdEncoding.EncodeToString([]byte(str)))
+	processesNum := 10
+	sliceSize := int((len(newData)+9) / 10)
+
+	var wg sync.WaitGroup
+	wg.Add(processesNum)
+
+	for k := 0; k < processesNum; k++ {
+		go func(sliceData []models.Employee ) {
+			for i, item := range sliceData {
+				t := reflect.TypeOf(item)
+				v := reflect.ValueOf(&item).Elem()
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					tag := field.Tag.Get("kms")
+					switch tag {
+					case "type=urlEncode":
+						str := v.Field(j).String()
+						v.Field(j).SetString(url.QueryEscape(str))
+					case "type=base64":
+						str := v.Field(j).String()
+						v.Field(j).SetString(base64.StdEncoding.EncodeToString([]byte(str)))
+					}
+				}
+				sliceData[i] = item
 			}
-		}
-		newData[i] = item
+			wg.Done()
+		}(newData[sliceSize*k:sliceSize*(k+1)])
 	}
+	wg.Wait()
+
 	return nil
 }
 
@@ -77,28 +91,41 @@ func (kms *KmsServer) Decrypt(data interface{}) error {
 		return errors.New("参数类型错误")
 	}
 
-	for i, item := range newData {
-		t := reflect.TypeOf(item)
-		v := reflect.ValueOf(&item).Elem()
-		for j := 0; j < t.NumField(); j++ {
-			field := t.Field(j)
-			tag := field.Tag.Get("kms")
-			switch tag {
-			case "type=urlEncode":
-				str, error := url.QueryUnescape(v.Field(j).String())
-				if error != nil {
-					errors.New("urlEncode 解码失败")
+	processesNum := 10
+	sliceSize := int((len(newData)+9) / 10)
+
+	var wg sync.WaitGroup
+	wg.Add(processesNum)
+
+	for k := 0; k < processesNum; k++ {
+		go func(sliceData []models.Employee ) {
+			for i, item := range sliceData {
+				t := reflect.TypeOf(item)
+				v := reflect.ValueOf(&item).Elem()
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					tag := field.Tag.Get("kms")
+					switch tag {
+					case "type=urlEncode":
+						str, error := url.QueryUnescape(v.Field(j).String())
+						if error != nil {
+							errors.New("urlEncode 解码失败")
+						}
+						v.Field(j).SetString(str)
+					case "type=base64":
+						str, error := base64.StdEncoding.DecodeString(v.Field(j).String())
+						if error != nil {
+							errors.New("base64 解码失败")
+						}
+						v.Field(j).SetString(string(str))
+					}
 				}
-				v.Field(j).SetString(str)
-			case "type=base64":
-				str, error := base64.StdEncoding.DecodeString(v.Field(j).String())
-				if error != nil {
-					errors.New("base64 解码失败")
-				}
-				v.Field(j).SetString(string(str))
+				sliceData[i] = item
 			}
-		}
-		newData[i] = item
+			wg.Done()
+		}(newData[sliceSize*k:sliceSize*(k+1)])
 	}
+	wg.Wait()
+
 	return nil
 }

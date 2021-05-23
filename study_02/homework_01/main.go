@@ -8,7 +8,7 @@ import (
 
 func main() {
 	var list []models.Employee
-	for i := 1; i < 2; i++ {
+	for i := 0; i < 10; i++ {
 		list = append(list, models.Employee{
 			Id:        i,
 			CompanyId: i * 10,
