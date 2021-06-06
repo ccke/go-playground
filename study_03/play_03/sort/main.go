@@ -11,6 +11,6 @@ func main() {
 		s = append(s, rand.Intn(100))
 	}
 	fmt.Println("排序前：", s)
-	mergeSort(s)
+	radixSort(s)
 	fmt.Println("排序后：", s)
 }
